@@ -11,15 +11,14 @@ GROUP_ID = os.environ.get("GROUP_ID", "ВАШ_GROUP_ID")
 
 @app.route('/get_products', methods=['POST'])
 def get_products():
-    data = request.json or {}
-    # GPTunneL будет присылать поисковый запрос (например, "ручка")
-    query = data.get('query', '')
-    
+    # request.values безопасно забирает данные и из JSON, и из URL-параметров
+    query = request.values.get('query', '')
+           
     url = "https://api.vk.com/method/market.get"
     params = {
-        "owner_id": f"-{GROUP_ID}",  # Минус обязателен для сообществ
+        "owner_id": f"-{GROUP_ID}",
         "q": query,
-        "count": 5,  # Максимум 5 товаров для ответа
+        "count": 5,
         "access_token": VK_TOKEN,
         "v": "5.199"
     }
@@ -40,7 +39,9 @@ def get_products():
                 
             return jsonify({"answer": result_text})
         else:
-            return jsonify({"answer": "Не удалось получить данные из каталога. Возможно, произошла ошибка."})
+            # Если ВК вернул ошибку, выводим её в логи, чтобы было проще дебажить
+            print("VK API Error:", response) 
+            return jsonify({"answer": "Не удалось получить данные из каталога. Возможно, в сообществе нет товаров."})
             
     except Exception as e:
         return jsonify({"answer": f"Ошибка при запросе к ВКонтакте: {str(e)}"})
